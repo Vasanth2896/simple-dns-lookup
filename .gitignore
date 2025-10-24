@@ -1,0 +1,8 @@
+#No Object files or executable
+*.o
+
+#No executables
+lookup
+*.out
+*.exe
+*.elf
