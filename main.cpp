@@ -14,39 +14,8 @@ using InternetAddress_t = struct in_addr;
 using sockAddress_t = struct sockaddr_in;
 using sockAddress6_t = struct sockaddr_in6;
 
-const char *toCString(const std::string &str)
-{
-    return str.c_str();
-}
 
-int socketCreation()
-{
-    int serverSocket = socket(AF_INET, SOCK_DGRAM, 0);
-
-    if (serverSocket == -1)
-    {
-        perror("Error in creating socket");
-        return 1;
-    }
-
-    return serverSocket;
-}
-
-int terminateSocket(int desiredSocket)
-{
-    int closeStatus = close(desiredSocket);
-
-    if (closeStatus == -1)
-    {
-        perror("Error in closing the socket");
-        return 1;
-    }
-    std::cout << "Socket has been successfully closed" << std::endl;
-
-    return 0;
-}
-
-void printIpAddress(AddressInfo_t *printResult,char* internetAddressString, int bufferSize)
+void printIpAddress(AddressInfo_t *printResult, char *internetAddressString, int bufferSize)
 {
     void *addr;
     std::string ipver;
@@ -69,30 +38,30 @@ void printIpAddress(AddressInfo_t *printResult,char* internetAddressString, int 
     // convert the IP to a string and print it:
     inet_ntop(printResult->ai_family, addr, internetAddressString, bufferSize);
     std::cout << ipver << ": " << internetAddressString << std::endl;
+    std::cout << std::endl;
 }
 
-void lookupWithAddressInfoLibrary()
+void lookupWithAddressInfoLibrary(char *node)
 {
     int result;
     // int socketFileDescriptor;
     AddressInfo_t hints;
     AddressInfo_t *presult, *printResult;
 
-    std::string node = "www.google.com";
-    std::string service = "http";
+    char *service = nullptr;
     memset(&hints, 0, sizeof(hints));
     hints.ai_family = AF_UNSPEC; /* Allow IPv4 or IPv6 */
     hints.ai_socktype = 0;       /* Any type of socket */
     hints.ai_flags = 0;
     hints.ai_protocol = 0; /* Any protocol */
-    hints.ai_canonname = NULL;
-    hints.ai_addr = NULL;
-    hints.ai_next = NULL;
+    hints.ai_canonname = nullptr;
+    hints.ai_addr = nullptr;
+    hints.ai_next = nullptr;
 
     // hold the address in string format
     char internetAddressString[INET6_ADDRSTRLEN];
 
-    result = getaddrinfo(toCString(node), toCString(service), &hints, &presult);
+    result = getaddrinfo(node, service, &hints, &presult);
     if (result != 0)
     {
         fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(result));
@@ -102,52 +71,59 @@ void lookupWithAddressInfoLibrary()
     std::cout << "DNS Lookup for " << node << std::endl;
     for (printResult = presult; printResult != NULL; printResult = printResult->ai_next)
     {
-        std::cout << "Desired Address type IPv4 or IPv6" << std::endl;
         switch (printResult->ai_family)
         {
         case AF_INET:
-            std::cout << "Family: ipv4" << std::endl;
+            std::cout << "Family: IPv4" << std::endl;
             break;
         case AF_INET6:
-            std::cout << "Family: ipv6" << std::endl;
-            break;
-        default:
-            std::cout << "No Idea of the address type" << std::endl;
+            std::cout << "Family: IPv6" << std::endl;
             break;
         }
 
         switch (printResult->ai_socktype)
         {
         case SOCK_STREAM:
-            std::cout << "SocketType: tcp/ip" << std::endl;
+            std::cout << "SocketType: TCP/IP" << std::endl;
             break;
         case SOCK_DGRAM:
-            std::cout << "SocketType: udp" << std::endl;
-            break;
-        default:
-            std::cout << "No Idea of the socket type" << std::endl;
+            std::cout << "SocketType: UDP" << std::endl;
             break;
         }
 
-        std::cout << "This is the protocol " << printResult->ai_protocol << std::endl;
+        switch (printResult->ai_protocol)
+        {
+        case IPPROTO_TCP:
+            std::cout << "Protocol: TCP" << std::endl;
+            break;
+        case IPPROTO_UDP:
+            std::cout << "Protocol: UDP" << std::endl;
+            break;
+        case IPPROTO_IP:
+            std::cout << "Protocol: IP" << std::endl;
+            break;
+        default:
+            std::cout << "Protocol: Unknown (" << printResult->ai_protocol << ")" << std::endl;
+            break;
+        }
 
-        printIpAddress(printResult,internetAddressString,sizeof(internetAddressString));
+        printIpAddress(printResult, internetAddressString, sizeof(internetAddressString));
     }
 
     freeaddrinfo(presult);
 }
 
-int main()
+int main(int argc, char *argv[])
 {
+    if (argc != 2)
+    {
+        std::cout << "usage: dns <hostname>" << std::endl;
+        return -1;
+    }
 
-    std::cout << "Performing DNS lookup" << std::endl;
-    int currentSocket = socketCreation();
-    std::cout << "This is the socket " << currentSocket << std::endl;
+    std::cout << "Performing DNS lookup for " << argv[1] << std::endl;
 
-    lookupWithAddressInfoLibrary();
-
-    int closeSocket = terminateSocket(currentSocket);
-    std::cout << "This is the socket status " << closeSocket << std::endl;
+    lookupWithAddressInfoLibrary(argv[1]);
 
     return 0;
 }
