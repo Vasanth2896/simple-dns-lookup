@@ -6,3 +6,6 @@ lookup
 *.out
 *.exe
 *.elf
+
+#No vscode extensions
+.vscode/
